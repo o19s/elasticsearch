@@ -25,17 +25,12 @@ import org.elasticsearch.common.io.stream.NamedWriteableRegistry;
 import org.elasticsearch.common.text.Text;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
-import org.elasticsearch.common.xcontent.XContentHelper;
 import org.elasticsearch.common.xcontent.XContentParser;
 import org.elasticsearch.common.xcontent.XContentType;
-import org.elasticsearch.index.query.MatchAllQueryBuilder;
+import org.elasticsearch.common.xcontent.json.JsonXContent;
 import org.elasticsearch.index.query.QueryParseContext;
-import org.elasticsearch.index.query.QueryParser;
-import org.elasticsearch.indices.query.IndicesQueriesRegistry;
 import org.elasticsearch.test.ESTestCase;
 import org.hamcrest.Matchers;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -44,22 +39,6 @@ import static org.elasticsearch.test.EqualsHashCodeTestUtils.checkEqualsAndHashC
 
 public class SearchAfterBuilderTests extends ESTestCase {
     private static final int NUMBER_OF_TESTBUILDERS = 20;
-    private static IndicesQueriesRegistry indicesQueriesRegistry;
-
-    /**
-     * setup for the whole base test class
-     */
-    @BeforeClass
-    public static void init() {
-        indicesQueriesRegistry = new IndicesQueriesRegistry();
-        QueryParser<MatchAllQueryBuilder> parser = MatchAllQueryBuilder::fromXContent;
-        indicesQueriesRegistry.register(parser, MatchAllQueryBuilder.NAME);
-    }
-
-    @AfterClass
-    public static void afterClass() throws Exception {
-        indicesQueriesRegistry = null;
-    }
 
     private static SearchAfterBuilder randomSearchAfterBuilder() throws IOException {
         int numSearchFrom = randomIntBetween(1, 10);
@@ -108,7 +87,7 @@ public class SearchAfterBuilderTests extends ESTestCase {
     // ensure that every number type remain the same before/after xcontent (de)serialization.
     // This is not a problem because the final type of each field value is extracted from associated sort field.
     // This little trick ensure that equals and hashcode are the same when using the xcontent serialization.
-    private static SearchAfterBuilder randomJsonSearchFromBuilder() throws IOException {
+    private SearchAfterBuilder randomJsonSearchFromBuilder() throws IOException {
         int numSearchAfter = randomIntBetween(1, 10);
         XContentBuilder jsonBuilder = XContentFactory.jsonBuilder();
         jsonBuilder.startObject();
@@ -150,7 +129,7 @@ public class SearchAfterBuilderTests extends ESTestCase {
         }
         jsonBuilder.endArray();
         jsonBuilder.endObject();
-        XContentParser parser = XContentFactory.xContent(XContentType.JSON).createParser(jsonBuilder.bytes());
+        XContentParser parser = createParser(JsonXContent.jsonXContent, jsonBuilder.bytes());
         parser.nextToken();
         parser.nextToken();
         parser.nextToken();
@@ -188,8 +167,8 @@ public class SearchAfterBuilderTests extends ESTestCase {
             builder.startObject();
             searchAfterBuilder.innerToXContent(builder);
             builder.endObject();
-            XContentParser parser = XContentHelper.createParser(shuffleXContent(builder).bytes());
-            new QueryParseContext(indicesQueriesRegistry, parser, ParseFieldMatcher.STRICT);
+            XContentParser parser = createParser(shuffleXContent(builder));
+            new QueryParseContext(parser, ParseFieldMatcher.STRICT);
             parser.nextToken();
             parser.nextToken();
             parser.nextToken();

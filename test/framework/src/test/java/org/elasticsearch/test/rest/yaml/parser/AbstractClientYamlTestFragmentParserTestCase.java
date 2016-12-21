@@ -25,7 +25,10 @@ import org.junit.After;
 
 import static org.hamcrest.Matchers.nullValue;
 
-public abstract class AbstractParserTestCase extends ESTestCase {
+/**
+ * Superclass for tests of subclasses of {@link ClientYamlTestFragmentParser}.
+ */
+public abstract class AbstractClientYamlTestFragmentParserTestCase extends ESTestCase {
 
     protected XContentParser parser;
 
@@ -33,8 +36,11 @@ public abstract class AbstractParserTestCase extends ESTestCase {
     @After
     public void tearDown() throws Exception {
         super.tearDown();
-        //this is the way to make sure that we consumed the whole yaml
-        assertThat(parser.currentToken(), nullValue());
-        parser.close();
+        // test may be skipped so we did not create a parser instance
+        if (parser != null) {
+            //this is the way to make sure that we consumed the whole yaml
+            assertThat(parser.currentToken(), nullValue());
+            parser.close();
+        }
     }
 }

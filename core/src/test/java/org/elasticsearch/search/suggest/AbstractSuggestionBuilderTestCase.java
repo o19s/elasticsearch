@@ -26,11 +26,9 @@ import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.ToXContent;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
-import org.elasticsearch.common.xcontent.XContentHelper;
 import org.elasticsearch.common.xcontent.XContentParser;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.QueryParseContext;
-import org.elasticsearch.indices.query.IndicesQueriesRegistry;
 import org.elasticsearch.search.SearchModule;
 import org.elasticsearch.test.ESTestCase;
 import org.junit.AfterClass;
@@ -45,7 +43,6 @@ public abstract class AbstractSuggestionBuilderTestCase<SB extends SuggestionBui
 
     private static final int NUMBER_OF_TESTBUILDERS = 20;
     protected static NamedWriteableRegistry namedWriteableRegistry;
-    protected static IndicesQueriesRegistry queriesRegistry;
     protected static ParseFieldMatcher parseFieldMatcher;
     protected static Suggesters suggesters;
 
@@ -56,7 +53,6 @@ public abstract class AbstractSuggestionBuilderTestCase<SB extends SuggestionBui
     public static void init() throws IOException {
         SearchModule searchModule = new SearchModule(Settings.EMPTY, false, emptyList());
         namedWriteableRegistry = new NamedWriteableRegistry(searchModule.getNamedWriteables());
-        queriesRegistry = searchModule.getQueryParserRegistry();
         suggesters = searchModule.getSuggesters();
         parseFieldMatcher = ParseFieldMatcher.STRICT;
     }
@@ -65,7 +61,6 @@ public abstract class AbstractSuggestionBuilderTestCase<SB extends SuggestionBui
     public static void afterClass() throws Exception {
         namedWriteableRegistry = null;
         suggesters = null;
-        queriesRegistry = null;
     }
 
     /**
@@ -128,8 +123,8 @@ public abstract class AbstractSuggestionBuilderTestCase<SB extends SuggestionBui
             xContentBuilder.endObject();
 
             XContentBuilder shuffled = shuffleXContent(xContentBuilder, shuffleProtectedFields());
-            XContentParser parser = XContentHelper.createParser(shuffled.bytes());
-            QueryParseContext context = new QueryParseContext(queriesRegistry, parser, parseFieldMatcher);
+            XContentParser parser = createParser(shuffled);
+            QueryParseContext context = new QueryParseContext(parser, parseFieldMatcher);
             // we need to skip the start object and the name, those will be parsed by outer SuggestBuilder
             parser.nextToken();
 
@@ -191,9 +186,8 @@ public abstract class AbstractSuggestionBuilderTestCase<SB extends SuggestionBui
                 (Writeable.Reader<SB>) namedWriteableRegistry.getReader(SuggestionBuilder.class, original.getWriteableName()));
     }
 
-    protected static QueryParseContext newParseContext(final String xcontent) throws IOException {
-        XContentParser parser = XContentFactory.xContent(xcontent).createParser(xcontent);
-        final QueryParseContext parseContext = new QueryParseContext(queriesRegistry, parser, parseFieldMatcher);
+    protected static QueryParseContext newParseContext(XContentParser parser) throws IOException {
+        final QueryParseContext parseContext = new QueryParseContext(parser, parseFieldMatcher);
         return parseContext;
     }
 }

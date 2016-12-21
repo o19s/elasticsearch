@@ -19,6 +19,7 @@
 
 package org.elasticsearch.action.admin.indices.rollover;
 
+import org.elasticsearch.common.ParseFieldMatcher;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
@@ -34,12 +35,12 @@ public class RolloverRequestTests extends ESTestCase {
         final RolloverRequest request = new RolloverRequest(randomAsciiOfLength(10), randomAsciiOfLength(10));
         final XContentBuilder builder = XContentFactory.jsonBuilder()
             .startObject()
-            .startObject("conditions")
-                .field("max_age", "10d")
-                .field("max_docs", 100)
-            .endObject()
+                .startObject("conditions")
+                    .field("max_age", "10d")
+                    .field("max_docs", 100)
+                .endObject()
             .endObject();
-        request.source(builder.bytes());
+        RolloverRequest.PARSER.parse(createParser(builder), request, () -> ParseFieldMatcher.EMPTY);
         Set<Condition> conditions = request.getConditions();
         assertThat(conditions.size(), equalTo(2));
         for (Condition condition : conditions) {
@@ -59,28 +60,28 @@ public class RolloverRequestTests extends ESTestCase {
         final RolloverRequest request = new RolloverRequest(randomAsciiOfLength(10), randomAsciiOfLength(10));
         final XContentBuilder builder = XContentFactory.jsonBuilder()
             .startObject()
-            .startObject("conditions")
-                .field("max_age", "10d")
-                .field("max_docs", 100)
-            .endObject()
-            .startObject("mappings")
-                .startObject("type1")
-                    .startObject("properties")
-                        .startObject("field1")
-                            .field("type", "string")
-                            .field("index", "not_analyzed")
+                .startObject("conditions")
+                    .field("max_age", "10d")
+                    .field("max_docs", 100)
+                .endObject()
+                .startObject("mappings")
+                    .startObject("type1")
+                        .startObject("properties")
+                            .startObject("field1")
+                                .field("type", "string")
+                                .field("index", "not_analyzed")
+                            .endObject()
                         .endObject()
                     .endObject()
                 .endObject()
-            .endObject()
-            .startObject("settings")
-                .field("number_of_shards", 10)
-            .endObject()
-            .startObject("aliases")
-                .startObject("alias1").endObject()
-            .endObject()
+                .startObject("settings")
+                    .field("number_of_shards", 10)
+                .endObject()
+                .startObject("aliases")
+                    .startObject("alias1").endObject()
+                .endObject()
             .endObject();
-        request.source(builder.bytes());
+        RolloverRequest.PARSER.parse(createParser(builder), request, () -> ParseFieldMatcher.EMPTY);
         Set<Condition> conditions = request.getConditions();
         assertThat(conditions.size(), equalTo(2));
         assertThat(request.getCreateIndexRequest().mappings().size(), equalTo(1));

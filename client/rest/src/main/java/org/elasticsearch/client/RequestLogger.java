@@ -37,7 +37,6 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.util.StringJoiner;
 
 /**
  * Helper class that exposes static methods to unify the way requests are logged.
@@ -153,7 +152,7 @@ final class RequestLogger {
             httpResponse.setEntity(entity);
             ContentType contentType = ContentType.get(entity);
             Charset charset = StandardCharsets.UTF_8;
-            if (contentType != null) {
+            if (contentType != null && contentType.getCharset() != null) {
                 charset = contentType.getCharset();
             }
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(entity.getContent(), charset))) {

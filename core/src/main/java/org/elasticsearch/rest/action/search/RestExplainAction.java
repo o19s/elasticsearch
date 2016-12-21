@@ -20,7 +20,6 @@
 package org.elasticsearch.rest.action.search;
 
 import org.apache.lucene.search.Explanation;
-import org.apache.lucene.util.IOUtils;
 import org.elasticsearch.action.explain.ExplainRequest;
 import org.elasticsearch.action.explain.ExplainResponse;
 import org.elasticsearch.client.node.NodeClient;
@@ -28,10 +27,8 @@ import org.elasticsearch.common.Strings;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.elasticsearch.common.xcontent.XContentParser;
 import org.elasticsearch.index.get.GetResult;
 import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.indices.query.IndicesQueriesRegistry;
 import org.elasticsearch.rest.BaseRestHandler;
 import org.elasticsearch.rest.BytesRestResponse;
 import org.elasticsearch.rest.RestController;
@@ -52,13 +49,9 @@ import static org.elasticsearch.rest.RestStatus.OK;
  * Rest action for computing a score explanation for specific documents.
  */
 public class RestExplainAction extends BaseRestHandler {
-
-    private final IndicesQueriesRegistry indicesQueriesRegistry;
-
     @Inject
-    public RestExplainAction(Settings settings, RestController controller, IndicesQueriesRegistry indicesQueriesRegistry) {
+    public RestExplainAction(Settings settings, RestController controller) {
         super(settings);
-        this.indicesQueriesRegistry = indicesQueriesRegistry;
         controller.registerHandler(GET, "/{index}/{type}/{id}/_explain", this);
         controller.registerHandler(POST, "/{index}/{type}/{id}/_explain", this);
     }
@@ -72,7 +65,7 @@ public class RestExplainAction extends BaseRestHandler {
         String queryString = request.param("q");
         request.withContentOrSourceParamParserOrNull(parser -> {
             if (parser != null) {
-                explainRequest.query(RestActions.getQueryContent(parser, indicesQueriesRegistry, parseFieldMatcher));
+                explainRequest.query(RestActions.getQueryContent(parser, parseFieldMatcher));
             } else if (queryString != null) {
                 QueryBuilder query = RestActions.urlParamsToQueryBuilder(request);
                 explainRequest.query(query);

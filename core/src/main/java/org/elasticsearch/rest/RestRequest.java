@@ -19,7 +19,6 @@
 
 package org.elasticsearch.rest;
 
-import org.apache.lucene.util.IOUtils;
 import org.elasticsearch.ElasticsearchParseException;
 import org.elasticsearch.common.Booleans;
 import org.elasticsearch.common.CheckedConsumer;
@@ -29,6 +28,7 @@ import org.elasticsearch.common.bytes.BytesArray;
 import org.elasticsearch.common.bytes.BytesReference;
 import org.elasticsearch.common.unit.ByteSizeValue;
 import org.elasticsearch.common.unit.TimeValue;
+import org.elasticsearch.common.xcontent.NamedXContentRegistry;
 import org.elasticsearch.common.xcontent.ToXContent;
 import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.common.xcontent.XContentParser;
@@ -47,11 +47,13 @@ import static org.elasticsearch.common.unit.TimeValue.parseTimeValue;
 
 public abstract class RestRequest implements ToXContent.Params {
 
+    private final NamedXContentRegistry xContentRegistry;
     private final Map<String, String> params;
     private final String rawPath;
     private final Set<String> consumedParams = new HashSet<>();
 
-    public RestRequest(String uri) {
+    public RestRequest(NamedXContentRegistry xContentRegistry, String uri) {
+        this.xContentRegistry = xContentRegistry;
         final Map<String, String> params = new HashMap<>();
         int pathEndPos = uri.indexOf('?');
         if (pathEndPos < 0) {
@@ -63,7 +65,8 @@ public abstract class RestRequest implements ToXContent.Params {
         this.params = params;
     }
 
-    public RestRequest(Map<String, String> params, String path) {
+    public RestRequest(NamedXContentRegistry xContentRegistry, Map<String, String> params, String path) {
+        this.xContentRegistry = xContentRegistry;
         this.params = params;
         this.rawPath = path;
     }
@@ -230,6 +233,37 @@ public abstract class RestRequest implements ToXContent.Params {
     }
 
     /**
+     * Get the {@link NamedXContentRegistry} that should be used to create parsers from this request.
+     */
+    public NamedXContentRegistry getXContentRegistry() {
+        return xContentRegistry;
+    }
+
+    /**
+     * A parser for the contents of this request if there is a body, otherwise throws an {@link ElasticsearchParseException}. Use
+     * {@link #applyContentParser(CheckedConsumer)} if you want to gracefully handle when the request doesn't have any contents. Use
+     * {@link #contentOrSourceParamParser()} for requests that support specifying the request body in the {@code source} param.
+     */
+    public final XContentParser contentParser() throws IOException {
+        BytesReference content = content();
+        if (content.length() == 0) {
+            throw new ElasticsearchParseException("Body required");
+        }
+        return XContentFactory.xContent(content).createParser(xContentRegistry, content);
+    }
+
+    /**
+     * If there is any content then call {@code applyParser} with the parser, otherwise do nothing.
+     */
+    public final void applyContentParser(CheckedConsumer<XContentParser, IOException> applyParser) throws IOException {
+        if (hasContent()) {
+            try (XContentParser parser = contentParser()) {
+                applyParser.accept(parser);
+            }
+        }
+    }
+
+    /**
      * Does this request have content or a {@code source} parameter? Use this instead of {@link #hasContent()} if this
      * {@linkplain RestHandler} treats the {@code source} parameter like the body content.
      */
@@ -247,7 +281,7 @@ public abstract class RestRequest implements ToXContent.Params {
         if (content.length() == 0) {
             throw new ElasticsearchParseException("Body required");
         }
-        return XContentFactory.xContent(content).createParser(content);
+        return XContentFactory.xContent(content).createParser(xContentRegistry, content);
     }
 
     /**
@@ -256,16 +290,13 @@ public abstract class RestRequest implements ToXContent.Params {
      * back to the user when there isn't request content.
      */
     public final void withContentOrSourceParamParserOrNull(CheckedConsumer<XContentParser, IOException> withParser) throws IOException {
-        XContentParser parser = null;
         BytesReference content = contentOrSourceParam();
         if (content.length() > 0) {
-            parser = XContentFactory.xContent(content).createParser(content);
-        }
-
-        try {
-            withParser.accept(parser);
-        } finally {
-            IOUtils.close(parser);
+            try (XContentParser parser = XContentFactory.xContent(content).createParser(xContentRegistry, content)) {
+                withParser.accept(parser);
+            }
+        } else {
+            withParser.accept(null);
         }
     }
 

@@ -19,6 +19,7 @@
 
 package org.elasticsearch.transport;
 
+import org.elasticsearch.Version;
 import org.elasticsearch.cluster.node.DiscoveryNode;
 import org.elasticsearch.common.breaker.CircuitBreaker;
 import org.elasticsearch.common.breaker.NoopCircuitBreaker;
@@ -62,8 +63,7 @@ public interface Transport extends LifecycleComponent {
     boolean nodeConnected(DiscoveryNode node);
 
     /**
-     * Connects to a node with the given connection profile. Use {@link ConnectionProfile#LIGHT_PROFILE} when just connecting for ping
-     * and then disconnecting. If the node is already connected this method has no effect
+     * Connects to a node with the given connection profile. If the node is already connected this method has no effect
      */
     void connectToNode(DiscoveryNode node, ConnectionProfile connectionProfile) throws ConnectTransportException;
 
@@ -83,6 +83,11 @@ public interface Transport extends LifecycleComponent {
         return new NoopCircuitBreaker("in-flight-noop");
     }
 
+    /**
+     * Returns a new request ID to use when sending a message via {@link Connection#sendRequest(long, String,
+     * TransportRequest, TransportRequestOptions)}
+     */
+    long newRequestId();
     /**
      * Returns a connection for the given node if the node is connected.
      * Connections returned from this method must not be closed. The lifecylce of this connection is maintained by the Transport
@@ -116,5 +121,12 @@ public interface Transport extends LifecycleComponent {
          */
         void sendRequest(long requestId, String action, TransportRequest request, TransportRequestOptions options) throws
             IOException, TransportException;
+
+        /**
+         * Returns the version of the node this connection was established with.
+         */
+        default Version getVersion() {
+            return getNode().getVersion();
+        }
     }
 }

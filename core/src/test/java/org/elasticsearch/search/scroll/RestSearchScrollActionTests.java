@@ -24,7 +24,6 @@ import org.elasticsearch.common.bytes.BytesArray;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.common.xcontent.XContentFactory;
-import org.elasticsearch.common.xcontent.XContentHelper;
 import org.elasticsearch.common.xcontent.XContentParser;
 import org.elasticsearch.rest.RestController;
 import org.elasticsearch.rest.RestRequest;
@@ -38,11 +37,11 @@ import static org.mockito.Mockito.mock;
 
 public class RestSearchScrollActionTests extends ESTestCase {
     public void testParseSearchScrollRequest() throws Exception {
-        XContentParser content = XContentHelper.createParser(XContentFactory.jsonBuilder()
+        XContentParser content = createParser(XContentFactory.jsonBuilder()
             .startObject()
                 .field("scroll_id", "SCROLL_ID")
                 .field("scroll", "1m")
-            .endObject().bytes());
+            .endObject());
 
         SearchScrollRequest searchScrollRequest = new SearchScrollRequest();
         RestSearchScrollAction.buildFromContent(content, searchScrollRequest);
@@ -53,18 +52,18 @@ public class RestSearchScrollActionTests extends ESTestCase {
 
     public void testParseSearchScrollRequestWithInvalidJsonThrowsException() throws Exception {
         RestSearchScrollAction action = new RestSearchScrollAction(Settings.EMPTY, mock(RestController.class));
-        RestRequest request = new FakeRestRequest.Builder().withContent(new BytesArray("{invalid_json}")).build();
+        RestRequest request = new FakeRestRequest.Builder(xContentRegistry()).withContent(new BytesArray("{invalid_json}")).build();
         Exception e = expectThrows(IllegalArgumentException.class, () -> action.prepareRequest(request, null));
         assertThat(e.getMessage(), equalTo("Failed to parse request body"));
     }
 
     public void testParseSearchScrollRequestWithUnknownParamThrowsException() throws Exception {
         SearchScrollRequest searchScrollRequest = new SearchScrollRequest();
-        XContentParser invalidContent = XContentHelper.createParser(XContentFactory.jsonBuilder()
+        XContentParser invalidContent = createParser(XContentFactory.jsonBuilder()
                 .startObject()
                     .field("scroll_id", "value_2")
                     .field("unknown", "keyword")
-                .endObject().bytes());
+                .endObject());
 
         Exception e = expectThrows(IllegalArgumentException.class,
                 () -> RestSearchScrollAction.buildFromContent(invalidContent, searchScrollRequest));
