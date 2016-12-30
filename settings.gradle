@@ -23,6 +23,7 @@ List projects = [
   'test:fixtures:hdfs-fixture',
   'test:logger-usage',
   'modules:aggs-matrix-stats',
+  'modules:aggs-geoheatmap',
   'modules:ingest-common',
   'modules:lang-expression',
   'modules:lang-mustache',
