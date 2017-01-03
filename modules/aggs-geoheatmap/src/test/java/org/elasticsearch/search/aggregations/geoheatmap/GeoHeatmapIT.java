@@ -31,12 +31,16 @@ import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.index.query.GeoShapeQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.plugins.Plugin;
 import org.elasticsearch.test.ESIntegTestCase;
-import org.junit.Ignore;
 import org.elasticsearch.search.aggregations.geoheatmap.RandomShapeGenerator;
+import org.elasticsearch.search.aggregations.geoheatmap.plugins.GeoHeatmapNetworkPlugin;
+import org.elasticsearch.search.aggregations.geoheatmap.plugins.GeoHeatmapSearchPlugin;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 
 import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
 import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
@@ -49,11 +53,20 @@ import static org.hamcrest.core.IsNull.notNullValue;
 
 public class GeoHeatmapIT extends ESIntegTestCase {
 
+    @Override
+    protected Collection<Class<? extends Plugin>> nodePlugins() {
+        return  Collections.singleton(GeoHeatmapSearchPlugin.class);
+    }
+
+    @Override
+    protected Collection<Class<? extends Plugin>> transportClientPlugins() {
+        return  Collections.singleton(GeoHeatmapNetworkPlugin.class);
+    }
+
     /**
      * Indexes a random shape, builds a random heatmap with that geometry, and
      * makes sure there are '1' entries in the heatmap counts
      */
-    @Ignore("need to register with a mock registry before enabling this test")
     public void testShapeFilterWithRandomGeoCollection() throws IOException {
         String name = randomAsciiOfLengthBetween(3, 20);
         GeometryCollectionBuilder gcb = RandomShapeGenerator.createGeometryCollection(random());
@@ -113,7 +126,6 @@ public class GeoHeatmapIT extends ESIntegTestCase {
     }
 
     // @see org.apache.solr.handler.component.SpatialHeatmapFacetsTest
-    @Ignore("need to register with a mock registry before enabling this test")
     public void testSpecificShapes() throws Exception {
         createPrecalculatedIndex();
         ShapeBuilder query = ShapeBuilders.newEnvelope(new Coordinate(50, 90), new Coordinate(180, 20));
@@ -129,7 +141,6 @@ public class GeoHeatmapIT extends ESIntegTestCase {
      * Check to make sure that the heatmap can be selectively built from multiple indexes
      * @throws Exception
      */
-    @Ignore("need to register with a mock registry before enabling this test")
     public void testMultipleIndexes() throws Exception {
         for (String index : Arrays.asList("test1", "test2")) {
             client().admin().indices().prepareCreate(index)
@@ -174,7 +185,6 @@ public class GeoHeatmapIT extends ESIntegTestCase {
      * Tests the various ways grid_level is calculated
      */
     // @see org.apache.solr.handler.component.SpatialHeatmapFacetsTest
-    @Ignore("need to register with a mock registry before enabling this test")
     public void testGridLevelCalc() throws Exception {
         createPrecalculatedIndex();
         ShapeBuilder query = ShapeBuilders.newEnvelope(new Coordinate(50, 90), new Coordinate(180, 20));

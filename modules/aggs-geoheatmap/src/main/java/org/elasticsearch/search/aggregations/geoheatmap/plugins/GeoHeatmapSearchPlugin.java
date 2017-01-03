@@ -17,21 +17,31 @@
  * under the License.
  */
 
-package org.elasticsearch.search.aggregations.geoheatmap;
+package org.elasticsearch.search.aggregations.geoheatmap.plugins;
 
+import org.elasticsearch.common.io.stream.NamedWriteableRegistry;
+import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.common.xcontent.NamedXContentRegistry;
+import org.elasticsearch.plugins.NetworkPlugin;
 import org.elasticsearch.plugins.Plugin;
 import org.elasticsearch.plugins.SearchPlugin;
+import org.elasticsearch.search.aggregations.AggregationBuilder;
+import org.elasticsearch.search.aggregations.InternalAggregation;
 import org.elasticsearch.search.aggregations.geoheatmap.GeoHeatmapAggregationBuilder;
 import org.elasticsearch.search.aggregations.geoheatmap.InternalGeoHeatmap;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import static java.util.Collections.singletonList;
 
-public class GeoHeatmapAggregationPlugin extends Plugin implements SearchPlugin {
+public class GeoHeatmapSearchPlugin extends Plugin implements SearchPlugin {
+
     @Override
     public List<AggregationSpec> getAggregations() {
         return singletonList(new AggregationSpec(GeoHeatmapAggregationBuilder.NAME, GeoHeatmapAggregationBuilder::new,
                 GeoHeatmapAggregationBuilder::parse).addResultReader(InternalGeoHeatmap::new));
     }
+    
 }

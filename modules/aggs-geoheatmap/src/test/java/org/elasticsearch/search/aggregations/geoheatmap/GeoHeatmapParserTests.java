@@ -22,23 +22,30 @@ package org.elasticsearch.search.aggregations.geoheatmap;
 import org.elasticsearch.common.ParseFieldMatcher;
 import org.elasticsearch.common.xcontent.XContentParser;
 import org.elasticsearch.common.xcontent.json.JsonXContent;
-import org.elasticsearch.index.query.GeoShapeQueryBuilder;
 import org.elasticsearch.index.query.QueryParseContext;
-import org.elasticsearch.index.query.QueryParser;
-import org.elasticsearch.search.aggregations.bucket.geogrid.GeoGridAggregationBuilder;
-import org.elasticsearch.test.ESTestCase;
-import org.junit.Ignore;
+import org.elasticsearch.plugins.Plugin;
+import org.elasticsearch.search.aggregations.geoheatmap.plugins.GeoHeatmapNetworkPlugin;
+import org.elasticsearch.test.ESIntegTestCase;
+
+import java.util.Collection;
+import java.util.Collections;
 
 /**
  * Tests the construction of the aggregator from JSON
  */
-public class GeoHeatmapParserTests extends ESTestCase {
+public class GeoHeatmapParserTests extends ESIntegTestCase {
+
+    //TODO: Can probably change this to ESTestCase and skip cluster creation. Method below would go away
+    @Override
+    protected Collection<Class<? extends Plugin>> transportClientPlugins() {
+        return  Collections.singleton(GeoHeatmapNetworkPlugin.class);
+    }
 
     /**
     * Randomly verifies possible field values are able to parse, except the geo_shape query
     * parsing which has its own tests
     */    
-    @Ignore("need to register with a mock registry before enabling this test")
+    //@Ignore("need to register with a mock registry before enabling this test")
     public void testParsing() throws Exception {
         StringBuilder sb = new StringBuilder();
         sb.append("{");
@@ -72,16 +79,7 @@ public class GeoHeatmapParserTests extends ESTestCase {
         XContentParser.Token token = stParser.nextToken();
         assertSame(XContentParser.Token.START_OBJECT, token);
         // can create a factory
-        //assertNotNull(GeoHeatmapAggregationBuilder.parse("geo_heatmap", parseContext));
-
-//        QueryParser<GeoShapeQueryBuilder> parser = GeoShapeQueryBuilder::fromXContent;
-//        IndicesQueriesRegistry mockRegistry = new IndicesQueriesRegistry();
-//        mockRegistry.register(parser, "geo_shape");
-//        QueryParseContext parseContext = new QueryParseContext(mockRegistry, stParser, ParseFieldMatcher.STRICT);
-//        XContentParser.Token token = stParser.nextToken();
-//        assertSame(XContentParser.Token.START_OBJECT, token);
-//        GeoHeatmapAggregationBuilder builder = GeoHeatmapAggregationBuilder.parse("geo_heatmap", parseContext);
-//        assertNotNull(builder);
+        assertNotNull(GeoHeatmapAggregationBuilder.parse("geo_heatmap", parseContext));
     }
     
     private void appendRandomNumericOrString(StringBuilder sb, String field, String value) {

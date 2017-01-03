@@ -30,14 +30,16 @@ import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.index.query.GeoShapeQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.search.aggregations.geoheatmap.GeoHeatmap;
+import org.elasticsearch.plugins.Plugin;
+import org.elasticsearch.search.aggregations.geoheatmap.plugins.GeoHeatmapNetworkPlugin;
+import org.elasticsearch.search.aggregations.geoheatmap.plugins.GeoHeatmapSearchPlugin;
 import org.elasticsearch.test.ESIntegTestCase;
-import org.elasticsearch.search.aggregations.geoheatmap.RandomShapeGenerator;
 import org.hamcrest.Matchers;
-import org.junit.Ignore;
 import org.locationtech.spatial4j.shape.Rectangle;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
@@ -59,6 +61,16 @@ public class GeoHeatmapAggregationIT extends ESIntegTestCase {
 
     static int numDocs, numTag1Docs;
     static Rectangle mbr;
+    
+    @Override
+    protected Collection<Class<? extends Plugin>> nodePlugins() {
+        return  Collections.singleton(GeoHeatmapSearchPlugin.class);
+    }
+
+    @Override
+    protected Collection<Class<? extends Plugin>> transportClientPlugins() {
+        return  Collections.singleton(GeoHeatmapNetworkPlugin.class);
+    }
 
     @Override
     public void setupSuiteScopeCluster() throws Exception {
@@ -99,7 +111,6 @@ public class GeoHeatmapAggregationIT extends ESIntegTestCase {
      * Create a simple heatmap over the indexed docs and verify that no cell has
      * more than that number of docs
      */
-    @Ignore("need to register with a mock registry before enabling this test")
     public void testSimple() throws Exception {
 
         EnvelopeBuilder env = new EnvelopeBuilder(new Coordinate(mbr.getMinX(), mbr.getMaxY()),
@@ -130,7 +141,6 @@ public class GeoHeatmapAggregationIT extends ESIntegTestCase {
     /**
      * Test that the number of cells generated is not greater than maxCells
      */
-    @Ignore("need to register with a mock registry before enabling this test")
     public void testMaxCells() throws Exception {
         int maxCells = randomIntBetween(1, 50_000) * 2;
         SearchResponse searchResponse = client().prepareSearch("idx").setQuery(matchAllQuery())
